@@ -3,23 +3,32 @@ import numpy as np
 import pandas as pd
 import matplotlib as plt
 from sklearn.preprocessing import LabelEncoder
-o=500
-df_train = pd.read_csv('Dataset/Training_set Copy.csv')
-IMG_SIZE=80
-T_Data = []
-R_DATA = []
-i=0
-
-
-import numpy as np
 import random
-import cv2
 
-def sp_noise(image,prob):
-    '''
-    Add salt and pepper noise to image
-    prob: Probability of the noise
-    '''
+DataSetPath = 'Dataset/train/'
+NumOfImg=3000
+df_train = pd.read_csv('Dataset/Training_set Copy.csv')
+IMG_SIZE=45
+Img_Data = []
+Label = []
+Ext_DATA = []
+Ext_LABEL = []
+i=0
+en = 0
+
+le = LabelEncoder()
+df_train['label'] = le.fit_transform(df_train['label'])
+Lb = df_train['label']
+Label = Lb[0:NumOfImg]
+
+print(Label)
+
+def flip(img):
+    img_flip = cv2.flip(img,1)
+    return img_flip
+
+
+def noise(image,prob):
     output = np.zeros(image.shape,np.uint8)
     thres = 1 - prob 
     for i in range(image.shape[0]):
@@ -34,43 +43,94 @@ def sp_noise(image,prob):
     return output
 
 
+def img_preprocess(path,length,size,gray = False):
+    global i
 
-while(i<o):
+    while(i<length):
+
+        img_bgr = cv2.imread(path + df_train.iloc[i]['filename'])
+        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+        
+        if gray == True:
+            img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+            new_img = cv2.resize(img_gray,(size,size))
+        else:
+            new_img = cv2.resize(img_rgb,(size,size))
+        
+        Img_Data.append(new_img)
+
+        i = i+1
 
 
-    img_bgr = cv2.imread('Dataset/train/'+df_train.iloc[i]['filename'])
-    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
-    new_img = cv2.resize(img_rgb,(IMG_SIZE,IMG_SIZE))
-    T_Data.append(new_img)
-    img_flip = cv2.flip(new_img,1)
-    #R_DATA.append(sp_noise(img_flip,0.05))
-    R_DATA.append(img_flip)
-    #cv2.imshow('bgr'+str(i) , img_bgr)
-    #cv2.imshow('rgb'+str(i) , img_rgb)
-    #print(img_gray)
-    i = i+1
-    #print(i)
+    print("done")
+
+img_preprocess(DataSetPath,NumOfImg,IMG_SIZE,False)
 
 
-print("done")
+def extra_data(path,length,prop,lab,size,gray = False):
+    ii=0
+    global en
+    
+    while(ii<length):
+        P = np.random.choice([0, 1], p=[1-prop, prop])
+        if P == 1:
+            img_bgr = cv2.imread(path + df_train.iloc[ii]['filename'])
+            img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+            
+            if gray == True:
+                img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
+                new_img = cv2.resize(img_gray,(size,size))
+            else:
+                new_img = cv2.resize(img_rgb,(size,size))
 
-le = LabelEncoder()
-df_train['label'] = le.fit_transform(df_train['label'])
-h=df_train['label']
+            PFlipNoise = np.random.choice([0, 1, 2], p=[0.6, 0.2,0.2])
+            
+            
+            if PFlipNoise==0:
+                Ext_DATA.append(flip(new_img))
+                Ext_LABEL.append(lab[ii])
+                en = en+1
+            elif PFlipNoise==1:
+                Ext_DATA.append(noise(new_img,0.2))
+                Ext_LABEL.append(lab[ii])
+                en = en+1
+            elif PFlipNoise==2:
+                T = flip(new_img)
+                Ext_DATA.append(noise(T,0.2))
+                Ext_LABEL.append(lab[ii])
+                en = en+1
+            
+            
+            
+            
+            
+            
+            
+        ii = ii+1
+    print("done")
+
+
+
+extra_data(DataSetPath,NumOfImg,.9,Label,IMG_SIZE,False)
+
+
+
+
+
 X=[]
 y=[]
 
-T_Data = np.concatenate((T_Data, R_DATA))
+
+Img_Data_Data = np.concatenate((Img_Data, Ext_DATA))
 
 
 
 
 
-X = T_Data
-y = h[0:o]
-y= np.concatenate((y, y))
-X = np.array(X).reshape(2*o,-1)
+X = Img_Data_Data
+y = Label
+y= np.concatenate((y, Ext_LABEL))
+X = np.array(X).reshape(en + NumOfImg,-1)
 
 print(X.shape)
 #X = np.where(X > np.mean(X), 1.0, 0.0)
