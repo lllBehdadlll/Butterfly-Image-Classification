@@ -165,7 +165,7 @@ from sklearn.svm import SVC
 
 #X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.1)  #تقسیم داده با نسبت مشخص شده برای ترین و تست
 
-svc = SVC(C=1.0, kernel='linear', degree=3, gamma='scale', coef0=0.0, shrinking=True, probability=False,
+svc = SVC(C=5.0, kernel='linear', degree=3, gamma='scale', coef0=0.0, shrinking=True, probability=False,
  tol=0.001, cache_size=200, class_weight='balanced', verbose=False,
  max_iter=-1, decision_function_shape='ovo', break_ties=False, random_state=None)   #فراخانی مدل و مشخص کردن پارامتر های آن
 
